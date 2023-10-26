@@ -1,0 +1,92 @@
+﻿<head>
+    <style>
+        :root {
+            --red: rgb(255, 0, 0);
+            --green: rgb(0, 255, 0);
+        }
+
+        td {
+            border: 1px solid #d1d0d0;
+            padding-inline: 2rem;
+            font-weight: 400;
+            font-size: smaller;
+        }
+
+        th {
+            border: 1px solid #d1d0d0;
+            padding-inline: 2rem;
+        }
+
+        .pointStatus {
+            margin: auto;
+            height: 0.6rem;
+            width: 0.6rem;
+            background-color: var(--red);
+            border-radius: 50%;
+            box-shadow: 0px 0px 6px var(--red);
+        }
+    </style>
+</head>
+
+<body>
+    <table class="d-flex justify-content-center align-items-center text-center">
+        <tr>
+            <th>Room</th>
+            <th>Name</th>
+            <th>Login Date</th>
+            <th>Access Date</th>
+            <th>Leave Date</th>
+            <th>Status</th>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td>@ViewData["name1"]</td>
+            <td>@ViewData["login1"]</td>
+            <td></td>
+            <td></td>
+            <td>
+                <div class="pointStatus"></div>
+            </td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>@ViewData["name2"]</td>
+            <td>@ViewData["login2"]</td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>@ViewData["name3"]</td>
+            <td>@ViewData["login3"]</td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td>@ViewData["name4"]</td>
+            <td>@ViewData["login4"]</td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td>@ViewData["name5"]</td>
+            <td>@ViewData["login5"]</td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>6</td>
+            <td>@ViewData["name6"]</td>
+            <td>@ViewData["login6"]</td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+    </table>
+</body>
