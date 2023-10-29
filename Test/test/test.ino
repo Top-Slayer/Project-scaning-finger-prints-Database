@@ -1,39 +1,50 @@
-#include <FS.h>
 #include <ArduinoJson.h>
+#include <ArduinoJson.hpp>
+#include <FirebaseESP8266.h>
+#include <ESP8266WiFi.h>
 
-const size_t capacity = 200; // Adjust the capacity based on your data size
-StaticJsonDocument<capacity> jsonDoc;
+
+#define WIFI_SSID "Alisone"
+#define WIFI_PASSWORD "56661595"
+
+#define API_KEY "AIzaSyB7OVD3bVd3MJ8__RHY4kBYGiRzo1wiPDk"
+#define DATABASE_URL "realtime-apartment.firebaseio.com"
+#define USER_EMAIL "hummen55@gmail.com"
+#define USER_PASSWORD "noynoyys55"
+
+FirebaseData fbdo;
+FirebaseAuth auth;
+FirebaseConfig config;
 
 void setup() {
-    Serial.begin(115200);
+  Serial.begin(115200);
 
-    // Initialize SPIFFS
-    if (!SPIFFS.begin()) {
-        Serial.println("Failed to mount file system");
-        return;
-    }
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.println();
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.print(".");
+  }
+  Serial.println("[ Connected ]");
 
-    // Add data to the JSON object
-    jsonDoc["sensor"] = "DHT22";
-    jsonDoc["temperature"] = 25.5;
-    jsonDoc["humidity"] = 60;
+  config.api_key = API_KEY;
+  auth.user.email = USER_EMAIL;
+  auth.user.password = USER_PASSWORD;
+  config.database_url = DATABASE_URL;
 
-    // Open a file for writing
-    File jsonFile = SPIFFS.open("/data.json", "r");
-    if (!jsonFile) 
-        Serial.println("Failed to open file for writing");
-        return;
-    }
+  Firebase.reconnectNetwork(true);
+  fbdo.setBSSLBufferSize(1024, 1024);
 
-    // Serialize the JSON data and write it to the file
-    serializeJson(jsonDoc, jsonFile);
-
-    // Close the file
-    jsonFile.close();
-
-    Serial.println("\nJSON data written to file");
+  Firebase.begin(&config, &auth);
 }
 
 void loop() {
-    // Your main code here
+  if (Firebase.ready() == 1) {
+    Firebase.get(fbdo, "/1/finger_prints/ID_1");
+    String value = fbdo.stringData();
+    Serial.print("Value from Firestore: ");
+    Serial.println(value);
+  }
+
+  delay(1000);
 }
