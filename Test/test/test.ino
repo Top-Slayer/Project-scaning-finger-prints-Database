@@ -1,122 +1,230 @@
-//--- Setup firebase and WiFi ---
-#include <Arduino.h>
-#include <Firebase_ESP_Client.h>
-#include <ESP8266WiFi.h>
-//--- Time library ---
-#include <NTPClient.h>
-#include <WiFiUdp.h>
-#include <TimeLib.h>
+/***************************************************
+  This is an example sketch for our optical Fingerprint sensor
 
-//Provide the token generation process info.
-#include "addons/TokenHelper.h"
-//Provide the RTDB payload printing info and other helper functions.
-#include "addons/RTDBHelper.h"
+  Designed specifically to work with the Adafruit BMP085 Breakout
+  ----> http://www.adafruit.com/products/751
 
-#define WIFI_SSID "Gg ez"
-#define WIFI_PASSWORD "nogamenolife"
+  These displays use TTL Serial to communicate, 2 pins are required to
+  interface
+  Adafruit invests time and resources providing this open source code,
+  please support Adafruit and open-source hardware by purchasing
+  products from Adafruit!
 
-#define FIREBASE_PROJECT_ID "realtime-apartment"
-#define API_KEY "AIzaSyB7OVD3bVd3MJ8__RHY4kBYGiRzo1wiPDk"
-#define DATABASE_URL "realtime-apartment-default-rtdb.asia-southeast1.firebasedatabase.app"
+  Written by Limor Fried/Ladyada for Adafruit Industries.
+  BSD license, all text above must be included in any redistribution
+ ****************************************************/
 
-FirebaseData fbdo;
-FirebaseAuth auth;
-FirebaseConfig config;
+#include <Adafruit_Fingerprint.h>
 
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", 25200, 60000);
 
-//--- other variable ---
-bool signupOK = false;
-bool dateStatus = false;
-bool onceStatus = true;
-int button = D2;
+#if (defined(__AVR__) || defined(ESP8266)) && !defined(__AVR_ATmega2560__)
+// For UNO and others without hardware serial, we must use software serial...
+// pin #2 is IN from sensor (GREEN wire)
+// pin #3 is OUT from arduino  (WHITE wire)
+// Set up the serial port to use softwareserial..
+SoftwareSerial mySerial(D5, D6);
 
-void setup() {
-  Serial.begin(115200);
-  pinMode(button, INPUT);
+#else
+// On Leonardo/M0/etc, others with hardware serial, use hardware serial!
+// #0 is green wire, #1 is white
+#define mySerial Serial1
 
-  SetupWiFi();
-  SetupFirebase();
+#endif
 
-  timeClient.begin();
-}
 
-void loop() {
-  // test finger print sensor by button
-  if (digitalRead(button) == 1) {
-    dateStatus = !dateStatus;
-    onceStatus = true;
-    delay(20);
-  }
-  Serial.println(dateStatus);
+Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
 
-  UpdateFirebase("Top", dateStatus);
-}
+uint8_t id;
 
-// ---- Functions -----
-void SetupWiFi() {
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  Serial.println();
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.print(".");
-  }
-  Serial.println("[ Connected ]");
-}
+void setup()
+{
+  Serial.begin(9600);
+  while (!Serial);  // For Yun/Leo/Micro/Zero/...
+  delay(100);
+  Serial.println("\n\nAdafruit Fingerprint sensor enrollment");
 
-void SetupFirebase() {
-  Serial.printf("Firebase Client v%s\n\n", FIREBASE_CLIENT_VERSION);
+  // set the data rate for the sensor serial port
+  finger.begin(57600);
 
-  config.api_key = API_KEY;
-  config.database_url = DATABASE_URL;
-
-  if (Firebase.signUp(&config, &auth, "", "")) {
-    Serial.println("ok");
-    signupOK = true;
+  if (finger.verifyPassword()) {
+    Serial.println("Found fingerprint sensor!");
   } else {
-    Serial.printf("%s\n", config.signer.signupError.message.c_str());
+    Serial.println("Did not find fingerprint sensor :(");
+    while (1) { delay(1); }
   }
 
-  config.token_status_callback = tokenStatusCallback;
-
-  Firebase.begin(&config, &auth);
-  Firebase.reconnectWiFi(true);
+  Serial.println(F("Reading sensor parameters"));
+  finger.getParameters();
+  Serial.print(F("Status: 0x")); Serial.println(finger.status_reg, HEX);
+  Serial.print(F("Sys ID: 0x")); Serial.println(finger.system_id, HEX);
+  Serial.print(F("Capacity: ")); Serial.println(finger.capacity);
+  Serial.print(F("Security level: ")); Serial.println(finger.security_level);
+  Serial.print(F("Device address: ")); Serial.println(finger.device_addr, HEX);
+  Serial.print(F("Packet len: ")); Serial.println(finger.packet_len);
+  Serial.print(F("Baud rate: ")); Serial.println(finger.baud_rate);
 }
 
-void UpdateFirebase(String name, bool dateStatus) {
+uint8_t readnumber(void) {
+  uint8_t num = 0;
 
-  FirebaseJson content;
-  String documentPath = "FingerPrint/fingerApperance_1";
+  while (num == 0) {
+    while (! Serial.available());
+    num = Serial.parseInt();
+  }
+  return num;
+}
 
-  content.set("fields/Name/stringValue", name);
-  content.set("fields/LoginDate/stringValue", UpdateDate());
-  content.set("fields/LogoutDate/stringValue", UpdateDate());
-  content.set("fields/Status/booleanValue", dateStatus);
+void loop()                     // run over and over again
+{
+  Serial.println("Ready to enroll a fingerprint!");
+  Serial.println("Please type in the ID # (from 1 to 127) you want to save this finger as...");
+  id = readnumber();
+  if (id == 0) {// ID #0 not allowed, try again!
+     return;
+  }
+  Serial.print("Enrolling ID #");
+  Serial.println(id);
 
-  if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), "")) {
-    if (onceStatus){
-      Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), (dateStatus) ? "Name, Status, LoginDate" : "Name, Status, LogoutDate");
-      onceStatus = false;
+  while (!  getFingerprintEnroll() );
+}
+
+uint8_t getFingerprintEnroll() {
+
+  int p = -1;
+  Serial.print("Waiting for valid finger to enroll as #"); Serial.println(id);
+  while (p != FINGERPRINT_OK) {
+    p = finger.getImage();
+    switch (p) {
+    case FINGERPRINT_OK:
+      Serial.println("Image taken");
+      break;
+    case FINGERPRINT_NOFINGER:
+      Serial.println(".");
+      break;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      break;
+    case FINGERPRINT_IMAGEFAIL:
+      Serial.println("Imaging error");
+      break;
+    default:
+      Serial.println("Unknown error");
+      break;
     }
-    // Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
-  } else {
-    Serial.println(fbdo.errorReason());
   }
-}
 
-String UpdateDate() {
-  timeClient.update();
-  unsigned long unixTime = timeClient.getEpochTime();
+  // OK success!
 
-  tmElements_t timeInfo;
-  breakTime(unixTime, timeInfo);
+  p = finger.image2Tz(1);
+  switch (p) {
+    case FINGERPRINT_OK:
+      Serial.println("Image converted");
+      break;
+    case FINGERPRINT_IMAGEMESS:
+      Serial.println("Image too messy");
+      return p;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      return p;
+    case FINGERPRINT_FEATUREFAIL:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    case FINGERPRINT_INVALIDIMAGE:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    default:
+      Serial.println("Unknown error");
+      return p;
+  }
 
-  int year = timeInfo.Year + 1970;
-  int month = timeInfo.Month;
-  int day = timeInfo.Day;
+  Serial.println("Remove finger");
+  delay(2000);
+  p = 0;
+  while (p != FINGERPRINT_NOFINGER) {
+    p = finger.getImage();
+  }
+  Serial.print("ID "); Serial.println(id);
+  p = -1;
+  Serial.println("Place same finger again");
+  while (p != FINGERPRINT_OK) {
+    p = finger.getImage();
+    switch (p) {
+    case FINGERPRINT_OK:
+      Serial.println("Image taken");
+      break;
+    case FINGERPRINT_NOFINGER:
+      Serial.print(".");
+      break;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      break;
+    case FINGERPRINT_IMAGEFAIL:
+      Serial.println("Imaging error");
+      break;
+    default:
+      Serial.println("Unknown error");
+      break;
+    }
+  }
 
-  String formattedDate = String(day) + "/" + String(month) + "/" + String(year) + "-" + String(timeClient.getFormattedTime());
+  // OK success!
 
-  return formattedDate;
+  p = finger.image2Tz(2);
+  switch (p) {
+    case FINGERPRINT_OK:
+      Serial.println("Image converted");
+      break;
+    case FINGERPRINT_IMAGEMESS:
+      Serial.println("Image too messy");
+      return p;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      return p;
+    case FINGERPRINT_FEATUREFAIL:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    case FINGERPRINT_INVALIDIMAGE:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    default:
+      Serial.println("Unknown error");
+      return p;
+  }
+
+  // OK converted!
+  Serial.print("Creating model for #");  Serial.println(id);
+
+  p = finger.createModel();
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Prints matched!");
+  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
+    Serial.println("Communication error");
+    return p;
+  } else if (p == FINGERPRINT_ENROLLMISMATCH) {
+    Serial.println("Fingerprints did not match");
+    return p;
+  } else {
+    Serial.println("Unknown error");
+    return p;
+  }
+
+  Serial.print("ID "); Serial.println(id);
+  p = finger.storeModel(id);
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Stored!");
+  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
+    Serial.println("Communication error");
+    return p;
+  } else if (p == FINGERPRINT_BADLOCATION) {
+    Serial.println("Could not store in that location");
+    return p;
+  } else if (p == FINGERPRINT_FLASHERR) {
+    Serial.println("Error writing to flash");
+    return p;
+  } else {
+    Serial.println("Unknown error");
+    return p;
+  }
+
+  return true;
 }
