@@ -1,21 +1,3 @@
-#include <SoftwareSerial.h>
-#define buzzerPin D0
-
-SoftwareSerial myserial(D5, D6);  // RX, TX
-
-const byte handshake[13] = { 0xEF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x04, 0x17, 0x00, 0x00, 0x1c };
-const byte getimg[12] = { 0xEF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x03, 0x01, 0x00, 0x05 };
-const byte img2tz1[13] = { 0xEF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x04, 0x02, 0x01, 0x00, 0x08 };
-const byte img2tz2[13] = { 0xEF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x04, 0x02, 0x01, 0x00, 0x08 };
-const byte regmodel[12] = { 0xEF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x03, 0x05, 0x00, 0x09 };
-const byte store[14] = { 0xEF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x06, 0x01, 0x00, 0x00, 0x00, 0x00 };
-const byte search[17] = { 0xEF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x08, 0x04, 0x01, 0x00, 0x00, 0x00, 0xff, 0x01, 0x0d };
-int REGISTRYID, SCORE;
-
-
-
-int Buffer[25];
-
 //////////////////////////////////////////////////////////
 void clearBuffer() {
   for (int i = 0; i < 25; i++) Buffer[i] = 0xff;
@@ -141,9 +123,8 @@ void buzzerError() {
   digitalWrite(buzzerPin, LOW);
 }
 //////////////////////////////////////
-void setup() {
+void SetupFingerPrint() {
   ESP.wdtDisable();
-  Serial.begin(115200);
   myserial.begin(57600);
   pinMode(buzzerPin, OUTPUT);
   digitalWrite(buzzerPin, LOW);
@@ -153,19 +134,14 @@ void setup() {
   else Serial.println("Handshake Failed!");
 }
 
-void loop() {
-  working();
-}
+// ----- Processing function -----
 
-void working() {
+bool CheckingFingerPrint() {
   int p = 0;
   Serial.println("Touch Fingerprint Sensor...");
   while (p == 0) {
     p = readFinger();
     ESP.wdtFeed();
-      Serial.print(myserial);
-      Serial.print(" ");
-    Serial.println();
   }
   if (p == 1) Serial.println("Finger OK");
   else if (p == 2) Serial.println("Please try again!");
@@ -181,11 +157,12 @@ void working() {
     Serial.print("Matching Score:");
     Serial.println(SCORE);
     buzzerOK();
+    return true; 
   } else if (p == 0) {
     Serial.println("Fingerprint match failed!");
     Serial.println("************************");
     buzzerError();
   }
-
-  delay(3000);
+  return false;  
+  // delay(3000);
 }
