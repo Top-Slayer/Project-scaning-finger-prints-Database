@@ -1,0 +1,6 @@
+Bug:
+[Debugging...] - ເວລາສະແກນຫຼາຍເທື່ອລະຈະເຮັດຄ່າທີ່ຢູ່ໃນ firebase fixed ເປັນ true ຕະຫຼອດ. (ຈະແກ້ໂດຍການໃຊ້ array of variable ມາຊ່ວຍ)
+[Successful] ມີປັນຫາທາງການສະມັດຂອງ arduino code
+
+Added:
+[Successful] - ໃຫ້ບອກວ່າຫ້ອງທີ່ມີຄົນຈອງພ້ອມໃສ່ໃນ python file

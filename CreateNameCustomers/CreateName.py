@@ -21,16 +21,22 @@ def checkEmptyHouse():
     for x in range(len(fingerApperances)):
         checkCustomer = db.collection("FingerPrint").document(str(fingerApperances[x]))
         check = checkCustomer.get()
+
         if check.exists:
             data = check.to_dict()
-            field_value = data.get("Name")
-            if field_value != None:
+            field_name = data.get("Name")
+            field_ID = data.get("ID")
+            if field_name != None:
                 print(
-                    f"{Fore.LIGHTRED_EX} {x+1} -- House-ID [{x+1}] : Own [{field_value}] --{Fore.RESET}"
+                    f"{Fore.LIGHTRED_EX} {x+1} -- House-ID [{x+1}] : Own [{field_name}] --{Fore.RESET}"
+                )
+            elif field_ID != None:
+                print(
+                    f"{Fore.LIGHTYELLOW_EX} {x+1} -- House-ID [{x+1}] : BOOKING --{Fore.RESET}"
                 )
             else:
                 print(
-                    f"{Fore.LIGHTGREEN_EX} {x+1} -- House-ID [{x+1}] : Empty --{Fore.RESET}"
+                    f"{Fore.LIGHTGREEN_EX} {x+1} -- House-ID [{x+1}] : EMPTY --{Fore.RESET}"
                 )
 
 
@@ -57,8 +63,8 @@ def createCustomerName():
 
     if check.exists:
         data = check.to_dict()
-        field_value = data.get("Name")
-        if field_value == None:
+        field_name = data.get("Name")
+        if field_name == None:
             data = {"Name": inputName}
             customer.update(data)
             print(f"{Fore.LIGHTGREEN_EX}Create cutomer's name was successful{Fore.RESET}")

@@ -44,6 +44,7 @@ void UpdateFirebase(int id, bool dateStatus) {
   } else {
     Serial.println(fbdo.errorReason());
   }
+
 }
 
 String UpdateDate() {
