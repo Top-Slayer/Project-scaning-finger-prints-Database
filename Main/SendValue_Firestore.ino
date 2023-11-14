@@ -28,18 +28,16 @@ void SetupFirebase() {
   Firebase.reconnectWiFi(true);
 }
 
-void UpdateFirebase(int id, bool dateStatus) {
-
+void UpdateFirebase(int id, bool status) {
+  status = !status;
   content.set("fields/ID/integerValue", id);
   content.set("fields/LoginDate/stringValue", UpdateDate());
   content.set("fields/LogoutDate/stringValue", UpdateDate());
-  content.set("fields/Status/booleanValue", dateStatus);
+  content.set("fields/Status/booleanValue", status);
 
-  if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), "")) {
     if (onceStatus) {
-      Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), (dateStatus) ? "ID, Status, LoginDate" : "ID, Status, LogoutDate");
+      Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), (status) ? "ID, Status, LoginDate" : "ID, Status, LogoutDate");
       onceStatus = false;
-    }
     // Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
   } else {
     Serial.println(fbdo.errorReason());

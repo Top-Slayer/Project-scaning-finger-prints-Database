@@ -32,7 +32,7 @@ FirebaseJsonData result;
 String documentPath;
 
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", 25200, 60000); // GMT +7 -- Set time zone
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 25200, 60000);  // GMT +7 -- Set time zone
 
 //--- variables of fingerPrints ---
 byte handshake[13] = { 0xEF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x04, 0x17, 0x00, 0x00, 0x1c };
@@ -50,7 +50,7 @@ int Buffer[25];
 
 //--- other variable ---
 bool signupOK = false;
-bool dateStatus = true;
+bool dateStatus;
 bool onceStatus = true;
 
 const int switchInput = D2;
@@ -59,7 +59,7 @@ bool state = false;
 void setup() {
   Serial.begin(115200);
   myserial.begin(57600);
-  
+
   SetupWiFi();
   SetupFirebase();
   SetupFinger();
@@ -80,40 +80,31 @@ void loop() {
       switch (REGISTRYID) {
         case 1:
           documentPath = "FingerPrint/fingerApperance_1";
-          dateStatus = !dateStatus;
-          dateStatus = content.get(result, "fields/Status/booleanValue");
-          UpdateFirebase(REGISTRYID, dateStatus);
           break;
         case 2:
           documentPath = "FingerPrint/fingerApperance_2";
-          dateStatus = content.get(result, "fields/Status/booleanValue");
-          UpdateFirebase(REGISTRYID, !dateStatus);
           break;
         case 3:
           documentPath = "FingerPrint/fingerApperance_3";
-          dateStatus = !dateStatus;
-          dateStatus = content.get(result, "fields/Status/booleanValue");
-          UpdateFirebase(REGISTRYID, dateStatus);
           break;
         case 4:
           documentPath = "FingerPrint/fingerApperance_4";
-          dateStatus = !dateStatus;
-          dateStatus = content.get(result, "fields/Status/booleanValue");
-          UpdateFirebase(REGISTRYID, dateStatus);
           break;
         case 5:
           documentPath = "FingerPrint/fingerApperance_5";
-          dateStatus = !dateStatus;
-          dateStatus = content.get(result, "fields/Status/booleanValue");
-          UpdateFirebase(REGISTRYID, dateStatus);
           break;
         case 6:
           documentPath = "FingerPrint/fingerApperance_6";
-          dateStatus = !dateStatus;
-          dateStatus = content.get(result, "fields/Status/booleanValue");
-          UpdateFirebase(REGISTRYID, dateStatus);
           break;
       }
+      Serial.print("Before state: ");
+      Serial.println(dateStatus);
+
+      dateStatus = content.get(result, "fields/Status/booleanValue");
+      UpdateFirebase(REGISTRYID, dateStatus);
+
+      Serial.print("Currently state: ");
+      Serial.println(dateStatus);
     }
   }
 }
