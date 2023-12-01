@@ -36,7 +36,6 @@ int readFinger() {
   }
 
   while (!myserial.available()) {
-    ESP.wdtFeed();
     if (digitalRead(switchInput)) {
       state = !state;
       Serial.print("Switch to ");
@@ -45,6 +44,8 @@ int readFinger() {
       break;
     }
   }
+
+  ESP.wdtFeed();
 
   i = 0;
   while (i < 12) {

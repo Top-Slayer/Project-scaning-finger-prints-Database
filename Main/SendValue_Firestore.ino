@@ -28,23 +28,28 @@ void SetupFirebase() {
   Firebase.reconnectWiFi(true);
 }
 
-void UpdateFirebase(int id, bool dateStatus) {
-
+void UpdateFirebase(int id) {
   content.set("fields/ID/integerValue", id);
   content.set("fields/LoginDate/stringValue", UpdateDate());
   content.set("fields/LogoutDate/stringValue", UpdateDate());
-  content.set("fields/Status/booleanValue", dateStatus);
+  content.set("fields/Status/booleanValue", statusDate);
 
-  if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), "")) {
-    if (onceStatus) {
-      Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), (dateStatus) ? "ID, Status, LoginDate" : "ID, Status, LogoutDate");
+  if (onceStatus) {
+    if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), "")) {
+      Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), content.raw(), (statusDate) ? "ID, Status, LoginDate" : "ID, Status, LogoutDate");
       onceStatus = false;
+      Serial.println("Good 200 status");
     }
     // Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
+    else {
+      Serial.println("Bad 400 status");
+    }
   } else {
     Serial.println(fbdo.errorReason());
   }
 
+  show_dateStatus[id - 1] = statusDate;
+  statusDate = !statusDate;
 }
 
 String UpdateDate() {
@@ -61,4 +66,31 @@ String UpdateDate() {
   String formattedDate = String(day) + "/" + String(month) + "/" + String(year) + "-" + String(timeClient.getFormattedTime());
   delay(100);
   return formattedDate;
+}
+
+void GetValueFireBase() {
+  String path[6];
+  path[0] = "FingerPrint/fingerApperance_1";
+  path[1] = "FingerPrint/fingerApperance_2";
+  path[2] = "FingerPrint/fingerApperance_3";
+  path[3] = "FingerPrint/fingerApperance_4";
+  path[4] = "FingerPrint/fingerApperance_5";
+  path[5] = "FingerPrint/fingerApperance_6";
+
+  for (int i = 0; i < 6; i++) {
+    if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), "")) {
+      content.set("fields/Status/booleanValue", statusDate);
+      Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", path[i].c_str(), true);
+      show_dateStatus[i] = content.get(result, "fields/Status/booleanValue");
+    }
+  }
+
+  for (int i = 0; i < 6; i++) {
+    Serial.print("ID-Room ");
+    Serial.print(i + 1);
+    Serial.print(" | Path-document: ");
+    Serial.print(path[i]);
+    Serial.print(" | Date-status: ");
+    Serial.println(show_dateStatus[i]);
+  }
 }
