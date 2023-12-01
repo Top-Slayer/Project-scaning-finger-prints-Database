@@ -15,8 +15,8 @@
 #include "addons/RTDBHelper.h"
 
 // WiFi set SSID and Password
-#define WIFI_SSID "Gg ez"
-#define WIFI_PASSWORD "nogamenolife"
+#define WIFI_SSID "ROBOT_MAKER"
+#define WIFI_PASSWORD "QPWOEIRUTY"
 
 // Define cloud firestore
 #define FIREBASE_PROJECT_ID "realtime-apartment"
@@ -50,11 +50,13 @@ int Buffer[25];
 
 //--- other variable ---
 bool signupOK = false;
-bool dateStatus;
 bool onceStatus = true;
-
+bool statusDate;
 const int switchInput = D2;
 bool state = false;
+
+bool show_dateStatus[6];
+int Room[6] = { D0, D1, D3, D4, D7, D8 };
 
 void setup() {
   Serial.begin(115200);
@@ -64,19 +66,32 @@ void setup() {
   SetupFirebase();
   SetupFinger();
 
+  GetValueFireBase();
+
   pinMode(switchInput, INPUT);
+  for (int x : Room) {
+    pinMode(x, OUTPUT);
+  }
+  for (int x : Room) {
+    digitalWrite(x, LOW);
+  }
 
   timeClient.begin();
 }
 
 void loop() {
+  onceStatus = true;
+
   Serial.println((state) ? "\n>> Registry Mode:" : "\n>> Check Mode:");
+
+  for (int i = 0; i < 6; i++) {
+    digitalWrite(Room[i], (show_dateStatus[i]) ? HIGH : LOW);
+  }
 
   if (state) {
     RegistryFinger();
   } else {
     if (CheckFinger() == true) {
-      onceStatus = true;
       switch (REGISTRYID) {
         case 1:
           documentPath = "FingerPrint/fingerApperance_1";
@@ -97,14 +112,8 @@ void loop() {
           documentPath = "FingerPrint/fingerApperance_6";
           break;
       }
-      Serial.print("Before state: ");
-      Serial.println(dateStatus);
 
-      dateStatus = content.get(result, "fields/Status/booleanValue");
-      UpdateFirebase(REGISTRYID, dateStatus);
-
-      Serial.print("Currently state: ");
-      Serial.println(dateStatus);
+      UpdateFirebase(REGISTRYID);
     }
   }
 }
