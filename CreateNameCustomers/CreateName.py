@@ -55,9 +55,9 @@ def deleteCustomer():
 def createCustomerName():
     checkEmptyHouse()
 
-    inputName = str(input(">> Enter customer's name: "))
     roomID = int(input(">> Enter ID-Room: "))
-
+    inputName = str(input(">> Enter customer's name: "))
+    
     customer = db.collection("FingerPrint").document(str(fingerApperances[roomID - 1]))
     check = customer.get()
 

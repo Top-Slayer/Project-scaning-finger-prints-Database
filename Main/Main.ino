@@ -15,8 +15,8 @@
 #include "addons/RTDBHelper.h"
 
 // WiFi set SSID and Password
-#define WIFI_SSID "Gg ez"
-#define WIFI_PASSWORD "nogamenolife"
+#define WIFI_SSID "ROBOT_MAKER"
+#define WIFI_PASSWORD "QPWOEIRUTY"
 
 // Define cloud firestore
 #define FIREBASE_PROJECT_ID "realtime-apartment"
@@ -32,7 +32,7 @@ FirebaseJsonData result;
 String documentPath;
 
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", 25200, 60000); // GMT +7 -- Set time zone
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 25200, 60000);  // GMT +7 -- Set time zone
 
 //--- variables of fingerPrints ---
 byte handshake[13] = { 0xEF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x04, 0x17, 0x00, 0x00, 0x1c };
@@ -50,70 +50,70 @@ int Buffer[25];
 
 //--- other variable ---
 bool signupOK = false;
-bool dateStatus = true;
 bool onceStatus = true;
-
+bool statusDate;
 const int switchInput = D2;
 bool state = false;
+
+bool show_dateStatus[6];
+int Room[6] = { D0, D1, D3, D4, D7, D8 };
 
 void setup() {
   Serial.begin(115200);
   myserial.begin(57600);
-  
+
   SetupWiFi();
   SetupFirebase();
   SetupFinger();
 
+  GetValueFireBase();
+
   pinMode(switchInput, INPUT);
+  for (int x : Room) {
+    pinMode(x, OUTPUT);
+  }
+  for (int x : Room) {
+    digitalWrite(x, LOW);
+  }
 
   timeClient.begin();
 }
 
 void loop() {
+  onceStatus = true;
+
   Serial.println((state) ? "\n>> Registry Mode:" : "\n>> Check Mode:");
+
+  for (int i = 0; i < 6; i++) {
+    digitalWrite(Room[i], (show_dateStatus[i]) ? HIGH : LOW);
+  }
 
   if (state) {
     RegistryFinger();
   } else {
     if (CheckFinger() == true) {
-      onceStatus = true;
       switch (REGISTRYID) {
         case 1:
           documentPath = "FingerPrint/fingerApperance_1";
-          dateStatus = !dateStatus;
-          dateStatus = content.get(result, "fields/Status/booleanValue");
-          UpdateFirebase(REGISTRYID, dateStatus);
           break;
         case 2:
           documentPath = "FingerPrint/fingerApperance_2";
-          dateStatus = content.get(result, "fields/Status/booleanValue");
-          UpdateFirebase(REGISTRYID, !dateStatus);
           break;
         case 3:
           documentPath = "FingerPrint/fingerApperance_3";
-          dateStatus = !dateStatus;
-          dateStatus = content.get(result, "fields/Status/booleanValue");
-          UpdateFirebase(REGISTRYID, dateStatus);
           break;
         case 4:
           documentPath = "FingerPrint/fingerApperance_4";
-          dateStatus = !dateStatus;
-          dateStatus = content.get(result, "fields/Status/booleanValue");
-          UpdateFirebase(REGISTRYID, dateStatus);
           break;
         case 5:
           documentPath = "FingerPrint/fingerApperance_5";
-          dateStatus = !dateStatus;
-          dateStatus = content.get(result, "fields/Status/booleanValue");
-          UpdateFirebase(REGISTRYID, dateStatus);
           break;
         case 6:
           documentPath = "FingerPrint/fingerApperance_6";
-          dateStatus = !dateStatus;
-          dateStatus = content.get(result, "fields/Status/booleanValue");
-          UpdateFirebase(REGISTRYID, dateStatus);
           break;
       }
+
+      UpdateFirebase(REGISTRYID);
     }
   }
 }

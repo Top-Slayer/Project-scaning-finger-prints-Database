@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+:root{
+    --bg-color1: #ffffff;
+    --bg-color2: #ffffff;
+    --bg-color3: #ffffff;
+    --bg-color4: #ffffff;
+    --bg-color5: #ffffff;
+    --bg-color6: #ffffff;
+}
+.login-date{
+    @apply text-base font-bold text-GreenWhite flex items-center pl-8;
+}
+.Logout-Date{
+    @apply text-base font-bold text-ReadBold flex items-center pl-8;
+}
+.true-circle{
+    @apply h-4 w-4 rounded-full bg-GreenWhite;
+}
+.false-circle{
+    @apply h-4 w-4 rounded-full bg-ReadBold;
+}
+.state-circle-1{
+    background-color: var(--bg-color1);
+}
+.state-circle-2{
+    background-color: var(--bg-color2);
+}
+.state-circle-3{
+    background-color: var(--bg-color3);
+}
+.state-circle-4{
+    background-color: var(--bg-color4);
+}
+.state-circle-5{
+    background-color: var(--bg-color5);
+}
+.state-circle-6{
+    background-color: var(--bg-color6);
+}
+.FullName{
+    @apply text-base font-bold text-gray-700 flex items-center pl-8;
+}
+@tailwind utilities;
